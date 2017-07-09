@@ -4,6 +4,7 @@
 #include <linux/kernel_stat.h>
 #include <linux/static_key.h>
 #include <linux/context_tracking.h>
+#include <linux/cpufreq.h>
 #include "sched.h"
 #include "walt.h"
 
@@ -149,6 +150,11 @@ void account_user_time(struct task_struct *p, u64 cputime)
 
 	/* Account for user time used */
 	acct_account_cputime(p);
+
+#ifdef CONFIG_CPU_FREQ_STAT
+	/* Account power usage for system time */
+	acct_update_power(p, cputime);
+#endif
 }
 
 /*
@@ -193,6 +199,11 @@ void account_system_index_time(struct task_struct *p,
 
 	/* Account for system time used */
 	acct_account_cputime(p);
+
+#ifdef CONFIG_CPU_FREQ_STAT
+	/* Account power usage for system time */
+	acct_update_power(p, cputime);
+#endif
 }
 
 /*
