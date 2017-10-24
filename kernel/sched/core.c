@@ -7978,6 +7978,7 @@ void __init sched_init(void)
 			rq->cpu_load[j] = 0;
 
 		rq->last_load_update_tick = jiffies;
+		rq->last_blocked_load_update_tick = jiffies;
 
 #ifdef CONFIG_SMP
 		rq->sd = NULL;
