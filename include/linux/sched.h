@@ -2129,6 +2129,7 @@ struct task_struct {
 #endif
 	int pagefault_disabled;
 	atomic64_t *concurrent_active_time;
+	atomic64_t *concurrent_policy_time;
 #ifdef CONFIG_THREAD_INFO_IN_TASK
 	/* A live task holds one reference. */
 	atomic_t stack_refcount;
