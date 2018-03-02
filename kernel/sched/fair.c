@@ -6943,7 +6943,7 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 			long spare_cap;
 			int idle_idx = INT_MAX;
 
-			if (!cpu_online(i))
+			if (!cpu_online(i) || cpu_isolated(i))
 				continue;
 
 			if (walt_cpu_high_irqload(i))
