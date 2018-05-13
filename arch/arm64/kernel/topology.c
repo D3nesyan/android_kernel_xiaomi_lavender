@@ -275,7 +275,7 @@ static void update_cpu_capacity(unsigned int cpu)
 
 	topology_set_cpu_scale(cpu, capacity);
 
-	pr_info("CPU%d: update cpu_capacity %lu\n",
+	pr_debug("CPU%d: update cpu_capacity %lu\n",
 		cpu, arch_scale_cpu_capacity(NULL, cpu));
 }
 
