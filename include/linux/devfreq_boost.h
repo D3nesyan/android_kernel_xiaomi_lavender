@@ -6,6 +6,7 @@
 #define _DEVFREQ_BOOST_H_
 
 #include <linux/devfreq.h>
+extern unsigned long last_input_time;
 
 enum df_device {
 	DEVFREQ_MSM_CPUBW,
