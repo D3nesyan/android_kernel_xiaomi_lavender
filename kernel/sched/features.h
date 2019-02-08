@@ -99,7 +99,7 @@
  * If enabled, this can be used to inform the scheduler about capacity
  * restrictions.
  */
-#define SCHED_FEAT_MIN_CAPACITY_CAPPING 0
+#define SCHED_FEAT_MIN_CAPACITY_CAPPING 1
 
 /*
  * Energy aware scheduling algorithm choices:
