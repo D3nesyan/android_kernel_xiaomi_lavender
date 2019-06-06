@@ -238,15 +238,16 @@ struct cfs_bandwidth {
 	u64 quota, runtime;
 	s64 hierarchical_quota;
 
-	short idle, period_active;
+	u8 idle;
+	u8 period_active;
+	u8 distribute_running;
+	u8 slack_started;
 	struct hrtimer period_timer, slack_timer;
 	struct list_head throttled_cfs_rq;
 
 	/* statistics */
 	int nr_periods, nr_throttled;
 	u64 throttled_time;
-
-	bool distribute_running;
 #endif
 };
 
