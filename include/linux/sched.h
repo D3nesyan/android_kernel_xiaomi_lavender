@@ -3740,11 +3740,11 @@ unsigned long arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
 #endif
 
 #ifdef CONFIG_DYNAMIC_STUNE_BOOST
-int do_stune_boost(char *st_name, int boost, int *slot);
-int do_stune_sched_boost(char *st_name, int *slot);
-int reset_stune_boost(char *st_name, int slot);
+int do_stune_boost(int boost, int *slot);
+int do_stune_sched_boost(int *slot);
+int reset_stune_boost(int slot);
 
-int get_sched_boost(char *st_name);
+int get_sched_boost(void);
 #endif /* CONFIG_DYNAMIC_STUNE_BOOST */
 
 #endif
