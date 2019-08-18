@@ -1003,6 +1003,8 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 
 #define RT_SCHEDTUNE_INTERVAL 50000000ULL
 
+static void sched_rt_update_capacity_req(struct rq *rq);
+
 static enum hrtimer_restart rt_schedtune_timer(struct hrtimer *timer)
 {
 	struct sched_rt_entity *rt_se = container_of(timer,
@@ -1036,6 +1038,7 @@ static enum hrtimer_restart rt_schedtune_timer(struct hrtimer *timer)
 	 */
 	rt_se->schedtune_enqueued = false;
 	schedtune_dequeue_task(p, cpu_of(rq));
+	sched_rt_update_capacity_req(rq);
 	cpufreq_update_util(rq, SCHED_CPUFREQ_RT);
 out:
 	raw_spin_unlock(&rq->lock);
@@ -1421,6 +1424,25 @@ static void dequeue_rt_entity(struct sched_rt_entity *rt_se, unsigned int flags)
 }
 
 /*
+ * Keep track of whether each cpu has an RT task that will
+ * soon schedule on that core. The problem this is intended
+ * to address is that we want to avoid entering a non-preemptible
+ * softirq handler if we are about to schedule a real-time
+ * task on that core. Ideally, we could just check whether
+ * the RT runqueue on that core had a runnable task, but the
+ * window between choosing to schedule a real-time task
+ * on a core and actually enqueueing it on that run-queue
+ * is large enough to lose races at an unacceptably high rate.
+ *
+ * This variable attempts to reduce that window by indicating
+ * when we have decided to schedule an RT task on a core
+ * but not yet enqueued it.
+ * This variable is a heuristic only: it is not guaranteed
+ * to be correct and may be updated without synchronization.
+ */
+DEFINE_PER_CPU(bool, incoming_rt_task);
+
+/*
  * Adding/removing a task to/from a priority array:
  */
 static void
@@ -1434,10 +1456,10 @@ enqueue_task_rt(struct rq *rq, struct task_struct *p, int flags)
 	enqueue_rt_entity(rt_se, flags);
 	walt_inc_cumulative_runnable_avg(rq, p);
 
-	if (!task_current(rq, p) && p->nr_cpus_allowed > 1) {
+	if (!task_current(rq, p) && p->nr_cpus_allowed > 1)
 		enqueue_pushable_task(rq, p);
-                schedtune_enqueue_task(p, cpu_of(rq));
-        }
+
+	*per_cpu_ptr(&incoming_rt_task, cpu_of(rq)) = false;
 
 	if (!schedtune_task_boost(p))
 		return;
@@ -1464,6 +1486,7 @@ enqueue_task_rt(struct rq *rq, struct task_struct *p, int flags)
 
 	rt_se->schedtune_enqueued = true;
 	schedtune_enqueue_task(p, cpu_of(rq));
+	sched_rt_update_capacity_req(rq);
 	cpufreq_update_util(rq, SCHED_CPUFREQ_RT);
 }
 
@@ -1476,7 +1499,6 @@ static void dequeue_task_rt(struct rq *rq, struct task_struct *p, int flags)
 	walt_dec_cumulative_runnable_avg(rq, p);
 
 	dequeue_pushable_task(rq, p);
-	schedtune_dequeue_task(p, cpu_of(rq));
 
 	if (!rt_se->schedtune_enqueued)
 		return;
@@ -1489,6 +1511,7 @@ static void dequeue_task_rt(struct rq *rq, struct task_struct *p, int flags)
 
 	rt_se->schedtune_enqueued = false;
 	schedtune_dequeue_task(p, cpu_of(rq));
+	sched_rt_update_capacity_req(rq);
 	cpufreq_update_util(rq, SCHED_CPUFREQ_RT);
 }
 
@@ -1526,6 +1549,17 @@ static void yield_task_rt(struct rq *rq)
 	requeue_task_rt(rq, rq->curr, 0);
 }
 
+/*
+ * Return whether the given cpu has (or will shortly have) an RT task
+ * ready to run. NB: This is a heuristic and is subject to races.
+ */
+bool
+cpu_has_rt_task(int cpu)
+{
+	struct rq *rq = cpu_rq(cpu);
+	return rq->rt.rt_nr_running > 0 || per_cpu(incoming_rt_task, cpu);
+}
+
 #ifdef CONFIG_SMP
 static int find_lowest_rq(struct task_struct *task, int sync);
 
@@ -1543,8 +1577,9 @@ task_may_not_preempt(struct task_struct *task, int cpu)
 	struct task_struct *cpu_ksoftirqd = per_cpu(ksoftirqd, cpu);
 
 	return ((softirqs & LONG_SOFTIRQ_MASK) &&
-		(task == cpu_ksoftirqd ||
-		 task_thread_info(task)->preempt_count & SOFTIRQ_MASK));
+		(task == cpu_ksoftirqd || is_idle_task(task) ||
+		 (task_thread_info(task)->preempt_count
+		     & (HARDIRQ_MASK | SOFTIRQ_MASK))));
 }
 
 /*
@@ -1570,6 +1605,7 @@ static void schedtune_dequeue_rt(struct rq *rq, struct task_struct *p)
 	/* schedtune_enqueued is true, deboost it */
 	rt_se->schedtune_enqueued = false;
 	schedtune_dequeue_task(p, task_cpu(p));
+	sched_rt_update_capacity_req(rq);
 	cpufreq_update_util(rq, SCHED_CPUFREQ_RT);
 }
 
@@ -1577,7 +1613,7 @@ static int
 select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags,
 		  int sibling_count_hint)
 {
-	struct task_struct *curr;
+	struct task_struct *curr, *tgt_task;
 	struct rq *rq;
 	bool may_not_preempt;
 	int target;
@@ -1594,6 +1630,18 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags,
 
 	may_not_preempt = task_may_not_preempt(curr, cpu);
 	target = find_lowest_rq(p, sync);
+
+	/*
+	 * Check once for losing a race with the other core's irq handler.
+	 * This does not happen frequently, but it can avoid delaying
+	 * the execution of the RT task in those cases.
+	 */
+	if (target != -1) {
+		tgt_task = READ_ONCE(cpu_rq(target)->curr);
+		if (task_may_not_preempt(tgt_task, target))
+			target = find_lowest_rq(p, sync);
+	}
+
 	/*
 	 * Possible race. Don't bother moving it if the
 	 * destination CPU is not running a lower priority task.
@@ -1601,6 +1649,7 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags,
 	if (target != -1 &&
 	    (may_not_preempt || p->prio < cpu_rq(target)->rt.highest_prio.curr))
 		cpu = target;
+	*per_cpu_ptr(&incoming_rt_task, cpu) = true;
 	rcu_read_unlock();
 out:
 	/*
@@ -1676,6 +1725,40 @@ static void check_preempt_curr_rt(struct rq *rq, struct task_struct *p, int flag
 #endif
 }
 
+#ifdef CONFIG_SMP
+static void sched_rt_update_capacity_req(struct rq *rq)
+{
+	u64 total, used, age_stamp, avg;
+	s64 delta;
+
+	if (!sched_freq())
+		return;
+
+	sched_avg_update(rq);
+	/*
+	 * Since we're reading these variables without serialization make sure
+	 * we read them once before doing sanity checks on them.
+	 */
+	age_stamp = READ_ONCE(rq->age_stamp);
+	avg = READ_ONCE(rq->rt_avg);
+	delta = rq_clock(rq) - age_stamp;
+
+	if (unlikely(delta < 0))
+		delta = 0;
+
+	total = sched_avg_period() + delta;
+
+	used = div_u64(avg, total);
+	if (unlikely(used > SCHED_CAPACITY_SCALE))
+		used = SCHED_CAPACITY_SCALE;
+
+	set_rt_cpu_capacity(rq->cpu, 1, (unsigned long)(used));
+}
+#else
+static inline void sched_rt_update_capacity_req(struct rq *rq)
+{ }
+#endif
+
 static struct sched_rt_entity *pick_next_rt_entity(struct rq *rq,
 						   struct rt_rq *rt_rq)
 {
@@ -1746,8 +1829,17 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
 	if (prev->sched_class == &rt_sched_class)
 		update_curr_rt(rq);
 
-	if (!rt_rq->rt_queued)
+	if (!rt_rq->rt_queued) {
+		/*
+		 * The next task to be picked on this rq will have a lower
+		 * priority than rt tasks so we can spend some time to update
+		 * the capacity used by rt tasks based on the last activity.
+		 * This value will be the used as an estimation of the next
+		 * activity.
+		 */
+		sched_rt_update_capacity_req(rq);
 		return NULL;
+	}
 
 	put_prev_task(rq, prev);
 
@@ -2620,6 +2712,9 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
 
 	update_curr_rt(rq);
 	update_rt_rq_load_avg(rq_clock_task(rq), cpu_of(rq), &rq->rt, 1);
+
+	if (rq->rt.rt_nr_running)
+		sched_rt_update_capacity_req(rq);
 
 	watchdog(rq, p);
 
