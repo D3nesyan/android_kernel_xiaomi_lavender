@@ -7084,7 +7084,6 @@ static unsigned long cpu_util_without(int cpu, struct task_struct *p)
 	if (sched_feat(UTIL_EST)) {
 		unsigned int estimated =
 			READ_ONCE(cfs_rq->avg.util_est.enqueued);
-#endif
 
 		/*
 		 * Despite the following checks we still have a small window
@@ -7110,6 +7109,7 @@ static unsigned long cpu_util_without(int cpu, struct task_struct *p)
 
 		util = max(util, estimated);
 	}
+#endif
 
 	/*
 	 * Utilization (estimated) can exceed the CPU capacity, thus let's
