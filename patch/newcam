@@ -1,0 +1,202 @@
+diff --git a/drivers/media/platform/msm/camera_v2/isp/msm_isp47.c b/drivers/media/platform/msm/camera_v2/isp/msm_isp47.c
+index cf9e7547d4e2..687522fcd4f6 100644
+--- a/drivers/media/platform/msm/camera_v2/isp/msm_isp47.c
++++ b/drivers/media/platform/msm/camera_v2/isp/msm_isp47.c
+@@ -37,7 +37,7 @@
+ #define VFE47_STATS_BURST_LEN 3
+ #define VFE47_UB_SIZE_VFE0 2048
+ #define VFE47_UB_SIZE_VFE1 1536
+-#define VFE47_UB_STATS_SIZE 144
++#define VFE47_UB_STATS_SIZE 288
+ #define MSM_ISP47_TOTAL_IMAGE_UB_VFE0 (VFE47_UB_SIZE_VFE0 - VFE47_UB_STATS_SIZE)
+ #define MSM_ISP47_TOTAL_IMAGE_UB_VFE1 (VFE47_UB_SIZE_VFE1 - VFE47_UB_STATS_SIZE)
+ #define VFE47_WM_BASE(idx) (0xA0 + 0x2C * idx)
+diff --git a/drivers/media/platform/msm/camera_v2/isp/msm_isp48.c b/drivers/media/platform/msm/camera_v2/isp/msm_isp48.c
+index e3d8ecb410ff..186fb6f28480 100644
+--- a/drivers/media/platform/msm/camera_v2/isp/msm_isp48.c
++++ b/drivers/media/platform/msm/camera_v2/isp/msm_isp48.c
+@@ -28,7 +28,7 @@
+ #define MSM_VFE48_BUS_CLIENT_INIT 0xABAB
+ #define VFE48_STATS_BURST_LEN 3
+ #define VFE48_UB_SIZE_VFE 2048 /* 2048 * 256 bits = 64KB */
+-#define VFE48_UB_STATS_SIZE 144
++#define VFE48_UB_STATS_SIZE 608
+ #define MSM_ISP48_TOTAL_IMAGE_UB_VFE (VFE48_UB_SIZE_VFE - VFE48_UB_STATS_SIZE)
+ 
+ 
+@@ -319,15 +319,15 @@ void msm_vfe48_stats_cfg_ub(struct vfe_device *vfe_dev)
+ 	int i;
+ 	uint32_t ub_offset = 0, stats_burst_len;
+ 	uint32_t ub_size[VFE47_NUM_STATS_TYPE] = {
+-		16, /* MSM_ISP_STATS_HDR_BE */
+-		16, /* MSM_ISP_STATS_BG */
+-		16, /* MSM_ISP_STATS_BF */
+-		16, /* MSM_ISP_STATS_HDR_BHIST */
+-		16, /* MSM_ISP_STATS_RS */
+-		16, /* MSM_ISP_STATS_CS */
+-		16, /* MSM_ISP_STATS_IHIST */
+-		16, /* MSM_ISP_STATS_BHIST */
+-		16, /* MSM_ISP_STATS_AEC_BG */
++		80, /* MSM_ISP_STATS_HDR_BE */
++		64, /* MSM_ISP_STATS_BG */
++		64, /* MSM_ISP_STATS_BF */
++		64, /* MSM_ISP_STATS_HDR_BHIST */
++		64, /* MSM_ISP_STATS_RS */
++		64, /* MSM_ISP_STATS_CS */
++		64, /* MSM_ISP_STATS_IHIST */
++		64, /* MSM_ISP_STATS_BHIST */
++		80, /* MSM_ISP_STATS_AEC_BG */
+ 	};
+ 
+ 	stats_burst_len = VFE48_STATS_BURST_LEN;
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
+index d883e1384bdd..a0f630cf4dcd 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
+@@ -238,7 +238,9 @@ int msm_sensor_match_vendor_id(struct msm_sensor_ctrl_t *s_ctrl)
+ 	const char *sensor_name;
+ 	uint16_t temp_sid = 0;
+ 	uint16_t vcmid = 0;
++	uint16_t lensid = 0;
+ 	int have_vcmid = 0;
++	int have_lensid = 0;
+ 	enum cci_i2c_master_t temp_master = MASTER_0;
+ 
+ 
+@@ -296,6 +298,16 @@ int msm_sensor_match_vendor_id(struct msm_sensor_ctrl_t *s_ctrl)
+ 		have_vcmid = 1;
+ 	}
+ 
++    if (s_ctrl->sensordata->lens_id_info->lens_id_addr != 0)
++	{
++	    msm_camera_cci_i2c_read(
++		sensor_i2c_client,
++		s_ctrl->sensordata->lens_id_info->lens_id_addr,
++		&lensid,
++		s_ctrl->sensordata->lens_id_info->data_type);
++		have_lensid = 1;
++	}
++
+ 	sensor_i2c_client->cci_client->sid = temp_sid;
+ 	sensor_i2c_client->cci_client->cci_i2c_master = temp_master;
+ 	if (rc < 0) {
+@@ -327,6 +339,21 @@ int msm_sensor_match_vendor_id(struct msm_sensor_ctrl_t *s_ctrl)
+ 				__func__, vcmid, s_ctrl->sensordata->vcm_id_info->vcm_id);
+ 			}
+ 		}
++        if(have_lensid == 1)
++		{
++			if (s_ctrl->sensordata->lens_id_info->lens_id != lensid)
++			{
++				pr_err("%s:match lensid if failed read lens id: 0x%x expected id 0x%x:\n",
++				__func__, lensid, s_ctrl->sensordata->lens_id_info->lens_id);
++				rc = -1;
++				return rc;
++			}
++			else
++			{
++				pr_err("%s: read lensid id: 0x%x expected id 0x%x:\n",
++				__func__, lensid, s_ctrl->sensordata->lens_id_info->lens_id);
++			}
++		}
+ 	}
+ 	pr_err("%s: read vendor id: 0x%x expected id 0x%x:\n",
+ 			__func__, vendorid, s_ctrl->sensordata->vendor_id_info->vendor_id);
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_driver.c b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_driver.c
+index a8cd1098c64c..8af792ef02af 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_driver.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_driver.c
+@@ -1337,6 +1337,7 @@ int32_t msm_sensor_driver_probe(void *setting,
+ 		slave_info->sensor_id_info = slave_info32->sensor_id_info;
+ 		slave_info->vendor_id_info = slave_info32->vendor_id_info;
+ 		slave_info->vcm_id_info = slave_info32->vcm_id_info;
++		slave_info->lens_id_info = slave_info32->lens_id_info;
+ 
+ 		slave_info->slave_addr = slave_info32->slave_addr;
+ 		slave_info->power_setting_array.size =
+@@ -1579,7 +1580,7 @@ CSID_TG:
+ 	s_ctrl->sensordata->flash_name = slave_info->flash_name;
+ 	s_ctrl->sensordata->vendor_id_info = &(slave_info->vendor_id_info);
+ 	s_ctrl->sensordata->vcm_id_info = &(slave_info->vcm_id_info);
+-
++	s_ctrl->sensordata->lens_id_info = &(slave_info->lens_id_info);
+ 
+ 	/*
+ 	 * Update eeporm subdevice Id by input eeprom name
+diff --git a/include/media/msm_cam_sensor.h b/include/media/msm_cam_sensor.h
+index d2f97a9e69da..79c8666db712 100644
+--- a/include/media/msm_cam_sensor.h
++++ b/include/media/msm_cam_sensor.h
+@@ -39,6 +39,7 @@ struct msm_camera_sensor_slave_info32 {
+ 	struct msm_sensor_id_info_t sensor_id_info;
+ 	struct msm_vendor_id_info_t vendor_id_info;
+ 	struct msm_vcm_id_info_t vcm_id_info;
++	struct msm_lens_id_info_t lens_id_info;
+ 	struct msm_sensor_power_setting_array32 power_setting_array;
+ 	uint8_t  is_init_params_valid;
+ 	struct msm_sensor_init_params sensor_init_params;
+diff --git a/include/soc/qcom/camera2.h b/include/soc/qcom/camera2.h
+index e6e06aaa1e4b..355b743147eb 100644
+--- a/include/soc/qcom/camera2.h
++++ b/include/soc/qcom/camera2.h
+@@ -195,6 +195,7 @@ struct msm_camera_sensor_board_info {
+ 	struct msm_camera_slave_info *slave_info;
+ 	struct msm_vendor_id_info_t *vendor_id_info;
+ 	struct msm_vcm_id_info_t *vcm_id_info;
++	struct msm_lens_id_info_t *lens_id_info;
+ 	struct msm_camera_csi_lane_params *csi_lane_params;
+ 	struct msm_camera_sensor_strobe_flash_data *strobe_flash_data;
+ 	struct msm_actuator_info *actuator_info;
+diff --git a/include/uapi/media/msm_camera.h b/include/uapi/media/msm_camera.h
+index 81e350ede6eb..4012e3e7d8c0 100644
+--- a/include/uapi/media/msm_camera.h
++++ b/include/uapi/media/msm_camera.h
+@@ -263,7 +263,7 @@ struct msm_mctl_post_proc_cmd {
+ #define MSM_CAMERA_STROBE_FLASH_NONE 0
+ #define MSM_CAMERA_STROBE_FLASH_XENON 1
+ 
+-#define MSM_MAX_CAMERA_SENSORS  6
++#define MSM_MAX_CAMERA_SENSORS  7
+ #define MAX_SENSOR_NAME 32
+ #define MAX_CAM_NAME_SIZE 32
+ #define MAX_ACT_MOD_NAME_SIZE 32
+diff --git a/include/uapi/media/msm_camsensor_sdk.h b/include/uapi/media/msm_camsensor_sdk.h
+index d35124c5a154..497115f6aa83 100644
+--- a/include/uapi/media/msm_camsensor_sdk.h
++++ b/include/uapi/media/msm_camsensor_sdk.h
+@@ -325,6 +325,14 @@ struct msm_vcm_id_info_t {
+ 	enum msm_cci_i2c_master_t cci_i2c_master;
+ };
+ 
++struct msm_lens_id_info_t {
++	unsigned short eeprom_slave_addr;
++	unsigned short lens_id_addr;
++	enum msm_camera_i2c_reg_addr_type addr_type;
++	unsigned short lens_id;
++	enum msm_camera_i2c_data_type data_type;
++	enum msm_cci_i2c_master_t cci_i2c_master;
++};
+ 
+ struct msm_camera_sensor_slave_info {
+ 	char sensor_name[32];
+@@ -339,6 +347,7 @@ struct msm_camera_sensor_slave_info {
+ 	struct msm_sensor_id_info_t sensor_id_info;
+ 	struct msm_vendor_id_info_t vendor_id_info;
+ 	struct msm_vcm_id_info_t vcm_id_info;
++	struct msm_lens_id_info_t lens_id_info;
+ 	struct msm_sensor_power_setting_array power_setting_array;
+ 	unsigned char  is_init_params_valid;
+ 	struct msm_sensor_init_params sensor_init_params;
+diff --git a/include/uapi/media/msmb_camera.h b/include/uapi/media/msmb_camera.h
+index 0a2dd446ccc4..448a598e3769 100644
+--- a/include/uapi/media/msmb_camera.h
++++ b/include/uapi/media/msmb_camera.h
+@@ -53,7 +53,7 @@
+ #define MSM_CAMERA_SUBDEV_EXT          19
+ #define MSM_CAMERA_SUBDEV_TOF          20
+ #define MSM_CAMERA_SUBDEV_LASER_LED    21
+-#define MSM_MAX_CAMERA_SENSORS  6
++#define MSM_MAX_CAMERA_SENSORS  7
+ 
+ /* The below macro is defined to put an upper limit on maximum
+  * number of buffer requested per stream. In case of extremely
