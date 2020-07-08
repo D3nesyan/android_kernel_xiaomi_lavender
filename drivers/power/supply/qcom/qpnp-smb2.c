@@ -554,7 +554,7 @@ static int smb2_usb_get_prop(struct power_supply *psy,
 					      USB_PSY_VOTER);
 		break;
 	default:
-		pr_err("get prop %d is not supported in usb\n", psp);
+		pr_debug("get prop %d is not supported in usb\n", psp);
 		rc = -EINVAL;
 		break;
 	}
@@ -728,7 +728,7 @@ static int smb2_usb_port_set_prop(struct power_supply *psy,
 
 	switch (psp) {
 	default:
-		pr_err_ratelimited("Set prop %d is not supported in pc_port\n",
+		pr_debug_ratelimited("Set prop %d is not supported in pc_port\n",
 				psp);
 		rc = -EINVAL;
 		break;
