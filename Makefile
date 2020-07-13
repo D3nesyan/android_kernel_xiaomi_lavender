@@ -655,6 +655,7 @@ endif
 
 ifeq ($(cc-name),clang)
 KBUILD_CFLAGS	+= -mcpu=cortex-a53 -mtune=cortex-a53
+KBUILD_AFLAGS	+= -mcpu=cortex-a53 -mtune=cortex-a53
 endif
 
 ifeq ($(cc-name),clang)
