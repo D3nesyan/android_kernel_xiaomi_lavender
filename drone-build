@@ -1,0 +1,113 @@
+#!/bin/bash
+clang_path="${HOME}/cbl/bin/clang"
+gcc_path="${HOME}/cbl/bin/aarch64-linux-gnu-"
+gcc_32_path="${HOME}/cbl/bin/arm-linux-gnueabi-"
+
+NAME=Unknown
+version=Snapshot
+
+source=`pwd`
+START=$(date +"%s")
+
+date="`date +"%m%d-%H%M"`"
+
+print (){
+case ${2} in
+	"red")
+	echo -e "\033[31m $1 \033[0m";;
+
+	"blue")
+	echo -e "\033[34m $1 \033[0m";;
+
+	"yellow")
+	echo -e "\033[33m $1 \033[0m";;
+
+	"purple")
+	echo -e "\033[35m $1 \033[0m";;
+
+	"sky")
+	echo -e "\033[36m $1 \033[0m";;
+
+	"green")
+	echo -e "\033[32m $1 \033[0m";;
+
+	*)
+	echo $1
+	;;
+	esac
+}
+
+args="CC=$clang_path \
+	CROSS_COMPILE=$gcc_path \
+	CROSS_COMPILE_ARM32=$gcc_32_path \
+	O=out \
+	-j$(nproc --all) "
+
+clean(){
+	rm -rf out
+}
+
+export KBUILD_BUILD_USER="Unknown"
+export KBUILD_BUILD_HOST="Ratoriku"
+
+build_oldcam(){
+	print "Building OLDCAM..." blue
+	make $args lavender-perf_defconfig && make $args
+	if [ $? -ne 0 ]; then
+    errored "Error while building for oldcam!"
+    else
+    export zipname="$NAME-Kernel-$version-lavender-OLDCAM-$date.zip"
+	mkzip
+	fi
+}
+
+build_newcam(){
+	print "Building NEWCAM..." blue
+	git apply patch/newcam
+	make $args lavender-perf_defconfig && make $args
+	if [ $? -ne 0 ]; then
+    errored "Error while building newcam!"
+    else
+    git reset --hard
+    export zipname="$NAME-Kernel-$version-lavender-NEWCAM-$date.zip"
+	mkzip
+	fi
+}
+
+function telegram_notify(){
+    curl -s https://api.telegram.org/bot"${bot_token}"/sendMessage -d parse_mode="Markdown" -d text="${1}" -d chat_id="${chat_id}"
+}
+
+function errored(){
+    telegram_notify "${1}"
+    exit 1
+}
+
+function telegram_upload(){
+    curl -s https://api.telegram.org/bot"${bot_token}"/sendDocument -F document=@"${1}" -F chat_id="${chat_id}"
+}
+
+mkzip(){
+	cp -f out/arch/arm64/boot/Image.gz-dtb ~/AnyKernel3
+	cd ~/AnyKernel3
+	make
+	mv -f *.zip ~/$zipname
+	cd ${HOME}
+	telegram_upload ${zipname}
+	cd $source
+	print "Done! Check your $zipname" green
+}
+
+	telegram_notify "Start building 
+	Version: $NAME-$version
+	Date: $date "
+	START=$(date +"%s")
+
+	build_oldcam
+
+	clean
+	build_newcam
+
+	END=$(date +"%s")
+	KDURTION=$((END - START))
+	telegram_notify "Done! Cost time $((KDURTION / 60)) min $((KDURTION % 60)) s"

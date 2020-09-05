@@ -1,0 +1,6 @@
+apt-get update
+apt-get install -y build-essential bc python curl git zip gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev wget libfl-dev
+
+cd $HOME
+git clone --depth=1 https://github.com/Ratoriku/AnyKernel3.git
+git clone --depth=1 https://github.com/kdrag0n/proton-clang.git cbl

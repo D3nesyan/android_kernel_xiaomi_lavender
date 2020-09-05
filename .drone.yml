@@ -1,0 +1,23 @@
+kind: pipeline
+name: build
+
+platform:
+  os: linux
+  arch: amd64
+
+clone:
+  depth: 1
+
+steps:
+  - name: setup&build
+    image: ubuntu:20.04
+    environment:
+      bot_token:
+        from_secret: bot_token
+      chat_id:
+        from_secret: chat_id
+    commands:
+      - export HOME=/drone
+      - ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+      - ./drone-setup
+      - ./drone-build
