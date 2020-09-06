@@ -45,6 +45,9 @@ extern bool enable_gesture_mode;
 extern bool synaptics_gesture_enable_flag;
 #endif
 
+static unsigned int framerate_override=60;
+module_param(framerate_override, uint, 0444);
+
 bool ESD_TE_status = false;
 DEFINE_LED_TRIGGER(bl_led_trigger);
 
@@ -2685,6 +2688,10 @@ static int mdss_dsi_panel_timing_from_dt(struct device_node *np,
 	pt->timing.v_front_porch = (!rc ? tmp : 6);
 	rc = of_property_read_u32(np, "qcom,mdss-dsi-v-pulse-width", &tmp);
 	pt->timing.v_pulse_width = (!rc ? tmp : 2);
+	if  (framerate_override >= 61) {
+	pt->timing.h_front_porch = 32;
+	pt->timing.h_back_porch = 16;
+	}
 
 	rc = of_property_read_u32(np, "qcom,mdss-dsi-h-left-border", &tmp);
 	pt->timing.border_left = !rc ? tmp : 0;
@@ -2706,6 +2713,9 @@ static int mdss_dsi_panel_timing_from_dt(struct device_node *np,
 
 	rc = of_property_read_u32(np, "qcom,mdss-dsi-panel-framerate", &tmp);
 	pt->timing.frame_rate = !rc ? tmp : DEFAULT_FRAME_RATE;
+	if (pt->timing.frame_rate == 60) {
+			pt->timing.frame_rate = framerate_override;
+	}
 	rc = of_property_read_u64(np, "qcom,mdss-dsi-panel-clockrate", &tmp64);
 	if (rc == -EOVERFLOW) {
 		tmp64 = 0;
