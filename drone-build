@@ -3,8 +3,8 @@ clang_path="${HOME}/cbl/bin/clang"
 gcc_path="${HOME}/cbl/bin/aarch64-linux-gnu-"
 gcc_32_path="${HOME}/cbl/bin/arm-linux-gnueabi-"
 
-NAME=Unknown
-version=Snapshot
+NAME=MeowKernel
+version=R1
 
 source=`pwd`
 START=$(date +"%s")
@@ -47,7 +47,7 @@ clean(){
 	rm -rf out
 }
 
-export KBUILD_BUILD_USER="Unknown"
+export KBUILD_BUILD_USER="Meow"
 export KBUILD_BUILD_HOST="Ratoriku"
 
 build_oldcam(){
@@ -56,7 +56,7 @@ build_oldcam(){
 	if [ $? -ne 0 ]; then
     errored "Error while building for oldcam!"
     else
-    export zipname="$NAME-Kernel-$version-lavender-OLDCAM-$date.zip"
+    export zipname="$NAME-$version-lavender-OLDCAM-$date.zip"
 	mkzip
 	fi
 }
@@ -69,7 +69,7 @@ build_newcam(){
     errored "Error while building newcam!"
     else
     git reset --hard
-    export zipname="$NAME-Kernel-$version-lavender-NEWCAM-$date.zip"
+    export zipname="$NAME-$version-lavender-NEWCAM-$date.zip"
 	mkzip
 	fi
 }
