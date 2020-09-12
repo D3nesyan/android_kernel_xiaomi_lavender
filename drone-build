@@ -39,8 +39,12 @@ case ${2} in
 
 args="CC=$clang_path \
 	CROSS_COMPILE=$gcc_path \
+	AR=${HOME}/cbl/bin/llvm-ar \
+	NM=${HOME}/cbl/bin/llvm-nm \
+	OBJCOPY=${HOME}/cbl/bin/llvm-objcopy \
+	OBJDUMP=${HOME}/cbl/bin/llvm-objdump \
+	STRIP=${HOME}/cbl/bin/llvm-strip \
 	CROSS_COMPILE_ARM32=$gcc_32_path \
-	O=out \
 	-j$(nproc --all) "
 
 clean(){
