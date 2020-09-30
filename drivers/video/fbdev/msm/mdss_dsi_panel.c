@@ -2693,10 +2693,8 @@ static int mdss_dsi_panel_timing_from_dt(struct device_node *np,
 	pt->timing.v_front_porch = (!rc ? tmp : 6);
 	rc = of_property_read_u32(np, "qcom,mdss-dsi-v-pulse-width", &tmp);
 	pt->timing.v_pulse_width = (!rc ? tmp : 2);
-	if  (framerate_override >= 61) {
 	pt->timing.h_front_porch = 32;
 	pt->timing.h_back_porch = 16;
-	}
 
 	rc = of_property_read_u32(np, "qcom,mdss-dsi-h-left-border", &tmp);
 	pt->timing.border_left = !rc ? tmp : 0;
