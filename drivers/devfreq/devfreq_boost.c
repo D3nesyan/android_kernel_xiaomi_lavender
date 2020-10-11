@@ -9,6 +9,11 @@
 #include <linux/fb.h>
 #include <linux/input.h>
 #include <linux/kthread.h>
+#include <linux/sched.h>
+
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+static int boost_slot;
+#endif /* CONFIG_DYNAMIC_STUNE_BOOST */
 
 unsigned long last_input_time;
 
@@ -193,10 +198,16 @@ static int fb_notifier_cb(struct notifier_block *nb, unsigned long action,
 
 		if (*blank == FB_BLANK_UNBLANK) {
 			clear_bit(SCREEN_OFF, &b->state);
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+			reset_stune_boost(boost_slot);
+#endif
 			__devfreq_boost_kick_max(b,
 				CONFIG_DEVFREQ_WAKE_BOOST_DURATION_MS);
 		} else {
 			set_bit(SCREEN_OFF, &b->state);
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+			do_stune_boost(0, &boost_slot);
+#endif
 			wake_up(&b->boost_waitq);
 		}
 	}
