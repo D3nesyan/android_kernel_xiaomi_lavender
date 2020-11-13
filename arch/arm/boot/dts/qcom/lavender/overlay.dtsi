@@ -432,13 +432,6 @@
 		pinctrl-1 = <&msm_gpio_20_output_high>;
 		pinctrl-2 = <&msm_gpio_72>;
 	};
-
-	ant_check {
-		compatible = "ant_check";
-	        ant_check_gpio = <&tlmm 74 0x0>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&ant_check_default>;
-	};
 };
 	
 &i2c_2 {
@@ -487,24 +480,6 @@
 			bias-pull-down;
 		};
 	};
-
-	ant-check-pin {
-		ant_check_default: ant_check_default {
-			mux {
-				pins = "gpio74";
-				function = "gpio";
-			};
-
-			config {
-				pins = "gpio74";
-				drive-strength = <2>;
-				bias-disable;
-				input-enable;
-				input-debounce = <5000>;
-			};
-		};
-	};
-
 
 	/* add pri_mi2s for smartpa */
 	pri_mi2s_sck {
