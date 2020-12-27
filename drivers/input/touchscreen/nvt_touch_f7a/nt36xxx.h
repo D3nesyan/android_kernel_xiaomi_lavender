@@ -55,8 +55,7 @@
 #define NVT_LOG(fmt, args...)    pr_debug("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
 #endif
 #define NVT_ERR(fmt, args...)    pr_err("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
-
-#if 1
+#if 0
 #define LOGV(log, ...) \
         printk("[%s] %s (line %d): " log, NVT_I2C_NAME, __func__, __LINE__, ##__VA_ARGS__)
 #else
