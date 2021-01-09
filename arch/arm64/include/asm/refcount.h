@@ -35,7 +35,7 @@ static __always_inline __must_check bool refcount_sub_and_test(unsigned int i,
 	bool ret = __refcount_sub_lt(i, &r->refs) == 0;
 
 	if (ret) {
-		smp_acquire__after_ctrl_dep();
+		smp_rmb();
 		return true;
 	}
 	return false;
