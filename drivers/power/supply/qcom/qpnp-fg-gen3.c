@@ -4024,7 +4024,7 @@ static int fg_psy_get_property(struct power_supply *psy,
 }
 
 #define BCL_RESET_RETRY_COUNT 4
-static int fg_bcl_reset(struct fg_chip *chip)
+static int __maybe_unused fg_bcl_reset(struct fg_chip *chip)
 {
 	int i, ret, rc = 0;
 	u8 val, peek_mux;
@@ -4211,13 +4211,6 @@ static int fg_psy_set_property(struct power_supply *psy,
 		rc = fg_set_jeita_threshold(chip, JEITA_HOT, pval->intval);
 		if (rc < 0) {
 			pr_err("Error in writing jeita_hot, rc=%d\n", rc);
-			return rc;
-		}
-		break;
-	case POWER_SUPPLY_PROP_FG_RESET_CLOCK:
-		rc = fg_bcl_reset(chip);
-		if (rc < 0) {
-			pr_err("Error in resetting BCL clock, rc=%d\n", rc);
 			return rc;
 		}
 		break;
