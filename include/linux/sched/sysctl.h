@@ -129,7 +129,7 @@ extern int sysctl_numa_balancing(struct ctl_table *table, int write,
 
 #define LIB_PATH_LENGTH 512
 extern char sched_lib_name[LIB_PATH_LENGTH];
-extern unsigned int sched_lib_mask_force;
+extern int sched_lib_mask_force;
 extern int sysctl_sched_lib_name_handler(struct ctl_table *table, int write,
 					 void __user *buffer, size_t *lenp,
 					 loff_t *ppos);
