@@ -25,10 +25,7 @@ const struct cpumask *cpu_coregroup_mask(int cpu);
 unsigned long arch_get_cpu_efficiency(int cpu);
 
 struct sched_domain;
-#ifdef CONFIG_CPU_FREQ
 #define arch_scale_freq_capacity topology_get_freq_scale
-extern unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu);
-#endif
 #define arch_scale_cpu_capacity topology_get_cpu_scale
 
 #include <asm-generic/topology.h>
