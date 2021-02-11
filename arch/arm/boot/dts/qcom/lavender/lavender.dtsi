@@ -1,0 +1,8 @@
+#include "lavender-camera.dtsi"
+#include "lavender-pm660.dtsi"
+#include "lavender-mdss.dtsi"
+#include "lavender-audio.dtsi"
+#include "lavender-mtp.dtsi"
+#include "lavender-base.dtsi"
+#include "lavender-pinctrl.dtsi"
+

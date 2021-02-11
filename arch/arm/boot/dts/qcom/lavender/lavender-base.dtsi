@@ -1,0 +1,130 @@
+/* sdm660.dtsi diff */
+&firmware {
+	android {
+			vbmeta {
+			compatible = "android,vbmeta";
+			parts = "vbmeta,boot,system,vendor,dtbo,recovery";
+		};
+
+		fstab {
+			vendor {
+				fsmgr_flags = "wait";
+			};
+		};
+	};
+};
+
+/ {
+	reserved-memory {
+		ramoops_mem: ramoops_region@b0000000 {
+			compatible = "removed-dma-pool";
+			no-map;
+			reg = <0 0xA0000000 0 0x00400000>;
+		};
+	};
+};
+ 
+&soc {
+	ramoops {
+		compatible = "ramoops";
+		memory-region = <&ramoops_mem>;
+		console-size = <0x0 0x200000>;
+		pmsg-size = <0x0 0x200000>;
+	};
+};
+
+&soc {
+	qcom,memshare {
+		mem_client_3_size: qcom,client_3 {
+			/delete-property/qcom,allocate-on-request;
+			qcom,allocate-boot-time;
+		};
+	};
+
+	/delete-node/ qcom,qbt1000;
+
+	qcom,sensor-information {
+		sensor_information22: qcom,sensor-information-22 {
+			qcom,sensor-type = "adc";
+			qcom,sensor-name = "backlight_therm";
+		};
+	};
+
+	sn_fuse: snfuse@0xA4128 {
+		compatible = "qcom,sn-fuse";
+		reg = <0x786134 0x4>,
+			<0x78607C 0x4>;
+		reg-names = "sn-base","fuse-state";
+	};
+
+	/delete-node/ qcom,rmtfs_sharedmem@0;
+	qcom,rmtfs_sharedmem@85e00000 {
+		compatible = "qcom,sharedmem-uio";
+		reg = <0x85e00000 0x200000>;
+		reg-names = "rmtfs";
+		qcom,client-id = <0x00000001>;
+	};
+};
+
+&pil_modem {
+	/delete-property/ qcom,complete-ramdump;
+};
+
+&qcom_seecom {
+	qcom,qsee-reentrancy-support = <0>;
+};
+
+/* sdm660-common.dtsi diff */
+&qusb_phy0 {
+		qcom,qusb-phy-init-seq = <0xf8 0x80
+					0x63 0x84
+					0x83 0x88
+					0xc5 0x8c
+					0x30 0x08
+					0x79 0x0c
+					0x21 0x10
+					0x14 0x9c
+					0x9f 0x1c
+					0x00 0x18>;
+};
+
+/* sdm660-blsp.dtsi common diff */
+&spi_7 {
+	status = "okay";
+	device@1 {
+		compatible = "qcom,spi-msm-codec-slave";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		reg = <1>; /* Chip select 0 */
+		spi-max-frequency = <1000000>;
+		spi-cpol;
+	};
+};
+
+/* sdm660-vts.dtsi diff */
+&slim_aud {
+	status = "disabled";
+};
+
+/* sdm660-qrd.dts diff */
+&soc {
+	/delete-property/ hbtp;
+};
+
+/* sdm660-regulator.dtsi diff */
+&rpm_bus {
+	rpm-regulator-ldoa16 {
+		status = "okay";
+		pm660_l16: regulator-l16 {
+			regulator-min-microvolt = <2800000>;
+			regulator-max-microvolt = <2800000>;
+			status = "okay";
+			regulator-always-on;
+		};
+	};
+};
+
+&pm660l_l3 {
+	regulator-always-on;
+};
+
