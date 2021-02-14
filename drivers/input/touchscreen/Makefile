@@ -98,3 +98,12 @@ obj-$(CONFIG_TOUCHSCREEN_ZFORCE)	+= zforce_ts.o
 obj-$(CONFIG_TOUCHSCREEN_COLIBRI_VF50)	+= colibri-vf50-ts.o
 obj-$(CONFIG_TOUCHSCREEN_ROHM_BU21023)	+= rohm_bu21023.o
 obj-$(CONFIG_TOUCHSCREEN_ST)		+= st/
+
+# HMI_M6100_A01
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_F7A)	+= synaptics_tcm_f7a/
+obj-$(CONFIG_TOUCHSCREEN_NVT_F7A) 	+= nvt_touch_f7a/
+obj-$(CONFIG_KERNEL_CUSTOM_F7A)	+= lct_tp_selftest.o
+obj-$(CONFIG_KERNEL_CUSTOM_F7A)	+= lct_tp_info.o
+obj-$(CONFIG_KERNEL_CUSTOM_F7A)	+= lct_tp_work.o
+obj-$(CONFIG_KERNEL_CUSTOM_F7A)	+= lct_tp_gesture.o
+obj-$(CONFIG_KERNEL_CUSTOM_F7A)	+= lct_tp_grip_area.o
