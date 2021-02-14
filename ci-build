@@ -1,0 +1,120 @@
+#!/bin/bash
+gcc_path="${HOME}/arm64-gcc/bin/aarch64-elf-"
+gcc_32_path="${HOME}/arm32-gcc/bin/arm-eabi-"
+
+NAME=MeowKernel
+version=Snapshot
+START=$(date +"%s")
+source=`pwd`
+date="`date +"%m%d-%H%M"`"
+
+print (){
+case ${2} in
+	"red")
+	echo -e "\033[31m $1 \033[0m";;
+
+	"blue")
+	echo -e "\033[34m $1 \033[0m";;
+
+	"yellow")
+	echo -e "\033[33m $1 \033[0m";;
+
+	"purple")
+	echo -e "\033[35m $1 \033[0m";;
+
+	"sky")
+	echo -e "\033[36m $1 \033[0m";;
+
+	"green")
+	echo -e "\033[32m $1 \033[0m";;
+
+	*)
+	echo $1
+	;;
+	esac
+}
+
+args="CROSS_COMPILE=$gcc_path \
+	CROSS_COMPILE_ARM32=$gcc_32_path \
+	-j$(nproc --all) "
+
+clean(){
+	rm -rf out
+}
+
+export KBUILD_BUILD_USER="Meow"
+export KBUILD_BUILD_HOST="Ratoriku"
+
+build_oldcam(){
+	print "Building OLDCAM version..." blue
+	make $args lavender-perf_defconfig && make $args
+	if [ $? -ne 0 ]; then
+    errored "Error while building for OLDCAM!"
+    else
+    export zipname="$NAME-$version-lavender-OLDCAM-$date.zip"
+	mkzip
+	fi
+}
+
+build_newcam(){
+	print "Building NEWCAM version..." blue
+	echo CONFIG_MACH_XIAOMI_NEWCAM=y >> arch/arm64/configs/lavender-perf_defconfig
+	make $args lavender-perf_defconfig && make $args
+	if [ $? -ne 0 ]; then
+    errored "Error while building for NEWCAM!"
+    else
+    export zipname="$NAME-$version-lavender-NEWCAM-$date.zip"
+	mkzip
+	fi
+}
+
+build_qcam(){
+	print "Building QCAM version..." blue
+	echo CONFIG_MACH_XIAOMI_QCAM=y >> arch/arm64/configs/lavender-perf_defconfig
+	make $args lavender-perf_defconfig && make $args
+	if [ $? -ne 0 ]; then
+    errored "Error while building for QCAM!"
+    else
+    export zipname="$NAME-$version-lavender-QCAM-$date.zip"
+	mkzip
+	fi
+}
+
+function telegram_notify(){
+    curl -s https://api.telegram.org/bot"${bot_token}"/sendMessage -d parse_mode="Markdown" -d text="${1}" -d chat_id="${chat_id}"
+}
+
+function errored(){
+    telegram_notify "${1}"
+    exit 1
+}
+
+function telegram_upload(){
+    curl -s https://api.telegram.org/bot"${bot_token}"/sendDocument -F document=@"${1}" -F chat_id="${chat_id}"
+}
+
+mkzip(){
+	cp -f out/arch/arm64/boot/Image.gz-dtb ${HOME}/AnyKernel3
+	cd ${HOME}/AnyKernel3
+	make
+	mv -f *.zip ${HOME}/$zipname
+	cd ${HOME}
+	telegram_upload ${zipname}
+	cd $source
+	print "Done! Check your $zipname" green
+}
+
+	telegram_notify "Start building 
+	Version: $NAME-$version
+	Date: $date "
+	START=$(date +"%s")
+
+	build_oldcam
+#	clean
+#	build_newcam
+#	clean
+#	build_qcam
+
+	END=$(date +"%s")
+	KDURTION=$((END - START))
+	telegram_notify "Done! Cost time $((KDURTION / 60)) min $((KDURTION % 60)) s"
