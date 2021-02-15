@@ -565,6 +565,7 @@ struct param_info {
 	char name[80];
 	int q_val;
 };
+#endif
 
 
 
@@ -590,7 +591,6 @@ struct param_info {
 #define EAR_RDC_MAX  (1370391217) //34 / 3.33 * (1<<27)
 #define EAR_RDC_DEFAULT (1168863097)  // 29 / 3.33 * 134217728
 */
-#endif
 
 static struct {
 	bool l_calib_stat;
