@@ -2149,7 +2149,7 @@ int smblib_set_prop_system_temp_level(struct smb_charger *chg,
 		pr_err("lct smblib_set_prop_system_temp_level 0 false fcc_votable\n");
 	}
 	
-	pr_err("lct smblib_set_prop_system_temp_level >0 fcc_votable\n");
+	pr_debug("lct smblib_set_prop_system_temp_level >0 fcc_votable\n");
 	
 	vote(chg->fcc_votable, THERMAL_DAEMON_VOTER, true,
 			chg->thermal_mitigation[chg->system_temp_level]);
