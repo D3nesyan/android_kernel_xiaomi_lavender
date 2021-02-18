@@ -3,7 +3,7 @@ gcc_path="${HOME}/arm64-gcc/bin/aarch64-elf-"
 gcc_32_path="${HOME}/arm32-gcc/bin/arm-eabi-"
 
 NAME=MeowKernel
-version=Snapshot
+version=r21
 START=$(date +"%s")
 source=`pwd`
 date="`date +"%m%d-%H%M"`"
