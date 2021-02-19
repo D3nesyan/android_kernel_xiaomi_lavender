@@ -5068,7 +5068,12 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 #ifdef CONFIG_SMP
 	int task_new = flags & ENQUEUE_WAKEUP_NEW;
 #endif
+
+#ifdef CONFIG_CGROUP_SCHEDTUNE
 	bool prefer_idle = schedtune_prefer_idle(p) > 0;
+#elif CONFIG_UCLAMP_TASK
+	bool prefer_idle = uclamp_latency_sensitive(p);
+#endif
 
 	/*
 	 * The code below (indirectly) updates schedutil which looks at
@@ -7423,8 +7428,13 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	rcu_read_lock();
 	sd = rcu_dereference(cpu_rq(prev_cpu)->sd);
 	if (energy_aware() && sd && !sd_overutilized(sd) &&
-		(sched_feat(EAS_PREFER_IDLE) && 
-			!(schedtune_prefer_idle(p) > 0 && !sync))) {
+		(sched_feat(EAS_PREFER_IDLE) &&
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+			!(schedtune_prefer_idle(p) > 0 &&
+#elif CONFIG_UCLAMP_TASK
+			!(uclamp_latency_sensitive(p) &&
+#endif
+				!sync))) {
 		/*
 		 * If the sync flag is set but ignored, prefer to
 		 * select cpu in the same cluster as current. So
