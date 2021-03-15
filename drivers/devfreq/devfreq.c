@@ -10,6 +10,7 @@
  * published by the Free Software Foundation.
  */
 
+#include <linux/binfmts.h>
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/errno.h>
@@ -819,7 +820,7 @@ static ssize_t governor_store(struct device *dev, struct device_attribute *attr,
 		ret = PTR_ERR(governor);
 		goto out;
 	}
-	if (df->governor == governor) {
+	if (df->governor == governor || (task_is_booster(current))) {
 		ret = 0;
 		goto out;
 	}
