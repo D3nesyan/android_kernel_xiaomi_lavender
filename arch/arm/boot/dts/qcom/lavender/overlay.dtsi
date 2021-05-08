@@ -142,17 +142,23 @@
 
 /* msm-pm660l */
 &red_led {
-	qcom,idx-len = <21>;
-	qcom,duty-pcts =
-		[00 19 32 4B 64
-		 64 4B 32 19 00];
+	qcom,duty-pcts = [ 00 0E 1C 2A 38 46 54 64 ];
+	qcom,idx-len = <8>;
+	qcom,pause-lo = <500>;
+	qcom,pause-hi = <500>;
+	qcom,ramp-step-ms = <50>;
+	qcom,lut-flags = <31>; /* loop, ramp up, reverse, pause hi, pause lo */
+	qcom,use-blink;
 };
 
 &white_led {
-	qcom,idx-len = <21>;
-	qcom,duty-pcts =
-		[00 19 32 4B 64
-		 64 4B 32 19 00];
+	qcom,duty-pcts = [ 00 0E 1C 2A 38 46 54 64 ];
+	qcom,idx-len = <8>;
+	qcom,pause-lo = <500>;
+	qcom,pause-hi = <500>;
+	qcom,ramp-step-ms = <50>;
+	qcom,lut-flags = <31>; /* loop, ramp up, reverse, pause hi, pause lo */
+	qcom,use-blink;
 };
 
 &pm660l_wled {
