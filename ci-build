@@ -3,7 +3,7 @@ gcc_path="${HOME}/arm64-gcc/bin/aarch64-elf-"
 gcc_32_path="${HOME}/arm32-gcc/bin/arm-eabi-"
 
 NAME=NekoKernel
-version=Snapshot
+version=r40
 START=$(date +"%s")
 source=`pwd`
 date="`date +"%m%d-%H%M"`"
@@ -111,7 +111,7 @@ mkzip(){
 
 	build_oldcam
 #	clean
-#	build_newcam
+	build_newcam
 #	clean
 #	build_qcam
 
